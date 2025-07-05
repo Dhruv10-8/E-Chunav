@@ -64,6 +64,11 @@ const UserProfile = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "../";
+  }
+
   if (error) return <p className="text-red-600">{error}</p>;
   if (!user) return <p>Loading profile...</p>;
 
@@ -84,6 +89,11 @@ const UserProfile = () => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-gray-600">Welcome, {user.name}</span>
+              <Link href="../">
+                <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">
+                  Logout
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -95,10 +105,18 @@ const UserProfile = () => {
             <h1 className="text-2xl font-bold mb-4 text-gray-600 m-5">
               User Profile
             </h1>
-            <p><strong>Name:</strong> {user.name}</p>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Aadhar:</strong> {user.aadhar}</p>
-            <p><strong>PAN:</strong> {user.pan}</p>
+            <p>
+              <strong>Name:</strong> {user.name}
+            </p>
+            <p>
+              <strong>Email:</strong> {user.email}
+            </p>
+            <p>
+              <strong>Aadhar:</strong> {user.aadhar}
+            </p>
+            <p>
+              <strong>PAN:</strong> {user.pan}
+            </p>
 
             <hr className="my-4" />
 
@@ -122,7 +140,9 @@ const UserProfile = () => {
                 )}
               </div>
             ) : (
-              <p className="text-green-700 mt-2">✅ Face ID already uploaded.</p>
+              <p className="text-green-700 mt-2">
+                ✅ Face ID already uploaded.
+              </p>
             )}
           </div>
         </div>
