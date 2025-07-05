@@ -51,8 +51,8 @@ export const submitVote = async (req, res) => {
         const timeStamp = new Date().toISOString();
         const voteData = `${candidateId}-${timeStamp}`;
         const voteHash = crypto.createHash('sha256').update(voteData).digest('hex');
-        await pool.query(`INSERT INTO votes (user_id, candidate_id, vote_hash, timestamp) VALUES ($1, $2, $3, $4)`,
-            [userId, candidateId, voteHash, timeStamp])
+        await pool.query(`INSERT INTO votes (candidate_id, vote_hash, timestamp) VALUES ($1, $2, $3)`,
+            [candidateId, voteHash, timeStamp])
         await pool.query(`UPDATE users SET has_voted = true WHERE id = $1`, [userId]);
         res.status(200).json({ message: 'Vote submitted successfully', voteHash });
     } catch (error) {

@@ -7,7 +7,7 @@ import Link from "next/link";
 const UserProfile = () => {
   const [user, setUser] = useState<any>(null);
   const [error, setError] = useState("");
-  const [file, setfile] = useState<File | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [uploadMessage, setUploadMessage] = useState("");
 
   useEffect(() => {
@@ -34,7 +34,7 @@ const UserProfile = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setfile(e.target.files[0]);
+      setFile(e.target.files[0]);
     }
   };
 
@@ -42,21 +42,22 @@ const UserProfile = () => {
     if (!file || !user) return;
 
     const formData = new FormData();
-    formData.append("file", file); // 👈 matches multer field name
+    formData.append("file", file);
     formData.append("id", user.id);
     formData.append("name", user.name);
 
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/vote/uploadface",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await axios.post("http://localhost:8000/api/vote/uploadface", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       setUploadMessage("Face uploaded successfully.");
+      // Refresh user data to get updated face_id_url
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:8000/api/auth/profile",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUser(response.data.user);
     } catch (err: any) {
       console.error("Upload error:", err);
       setUploadMessage("Upload failed.");
@@ -87,49 +88,48 @@ const UserProfile = () => {
           </div>
         </div>
       </header>
+
       <div className="min-h-screen bg-gray-50 flex items-left p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl text-lg text-gray-600 m-5 shadow-lg p-8">
             <h1 className="text-2xl font-bold mb-4 text-gray-600 m-5">
               User Profile
             </h1>
-            <p>
-              <strong>Name:</strong> {user.name}
-            </p>
-            <p>
-              <strong>Email:</strong> {user.email}
-            </p>
-            <p>
-              <strong>Aadhar:</strong> {user.aadhar}
-            </p>
-            <p>
-              <strong>PAN:</strong> {user.pan}
-            </p>
+            <p><strong>Name:</strong> {user.name}</p>
+            <p><strong>Email:</strong> {user.email}</p>
+            <p><strong>Aadhar:</strong> {user.aadhar}</p>
+            <p><strong>PAN:</strong> {user.pan}</p>
 
             <hr className="my-4" />
 
-            <div>
-              <label className="block mb-2 font-medium">Upload Face ID</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="mb-2 border-green-300 w-full px-4 py-3 outline-3px"
-              />
-              <button
-                onClick={handleFaceUpload}
-                className="bg-orange-500 text-white px-4 py-2 rounded"
-              >
-                Upload Face
-              </button>
-              {uploadMessage && (
-                <p className="mt-2 text-sm text-green-700">{uploadMessage}</p>
-              )}
-            </div>
+            {!user.face_id_url ? (
+              <div>
+                <label className="block mb-2 font-medium">Upload Face ID</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="mb-2 border-green-300 w-full px-4 py-3 outline-3px"
+                />
+                <button
+                  onClick={handleFaceUpload}
+                  className="bg-orange-500 text-white px-4 py-2 rounded"
+                >
+                  Upload Face
+                </button>
+                {uploadMessage && (
+                  <p className="mt-2 text-sm text-green-700">{uploadMessage}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-green-700 mt-2">✅ Face ID already uploaded.</p>
+            )}
           </div>
         </div>
+
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {/* Start Voting Card */}
             <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
               <div className="flex items-center mb-4">
                 <div className="h-6 w-6 text-orange-500 mr-2" />
@@ -138,14 +138,26 @@ const UserProfile = () => {
                 </h2>
               </div>
               <p className="text-gray-600 mb-6">
-                Click below to proceed with the voting process.
+                {user.has_voted
+                  ? "You have already voted. Thank you for participating!"
+                  : "Click below to proceed with the voting process."}
               </p>
-              <Link href="../votes">
-                <button className="w-full bg-white hover:bg-gray-50 text-orange-600 font-medium py-3 px-4 rounded-lg border border-green-200 transition-colors">
-                  Start voting
+              {!user.has_voted ? (
+                <Link href="../votes">
+                  <button className="w-full bg-white hover:bg-gray-50 text-orange-600 font-medium py-3 px-4 rounded-lg border border-green-200 transition-colors">
+                    Start Voting
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="w-full bg-gray-200 text-gray-500 font-medium py-3 px-4 rounded-lg border border-gray-300 cursor-not-allowed"
+                >
+                  Already Voted
                 </button>
-              </Link>
+              )}
             </div>
+
             {/* Candidates & Parties Card */}
             <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
               <div className="flex items-center mb-4">
@@ -158,10 +170,11 @@ const UserProfile = () => {
                 Learn about the candidates and political parties in your
                 constituency.
               </p>
-
-              <button className="w-full bg-white hover:bg-gray-50 text-green-600 font-medium py-3 px-4 rounded-lg border border-green-200 transition-colors">
-                View Candidates
-              </button>
+              <Link href="../candidates">
+                <button className="w-full bg-white hover:bg-gray-50 text-green-600 font-medium py-3 px-4 rounded-lg border border-green-200 transition-colors">
+                  View Candidates
+                </button>
+              </Link>
             </div>
 
             {/* How to Vote Card */}
@@ -175,10 +188,11 @@ const UserProfile = () => {
               <p className="text-gray-600 mb-6">
                 Step-by-step guide on how to use the digital voting platform.
               </p>
-
-              <button className="w-full bg-white hover:bg-gray-50 text-blue-600 font-medium py-3 px-4 rounded-lg border border-blue-200 transition-colors">
-                Read Guide
-              </button>
+              <Link href="../guide">
+                <button className="w-full bg-white hover:bg-gray-50 text-blue-600 font-medium py-3 px-4 rounded-lg border border-blue-200 transition-colors">
+                  Read Guide
+                </button>
+              </Link>
             </div>
           </div>
         </div>
